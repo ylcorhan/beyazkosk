@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Resim</title>
+<style>
+  :root { --bg:#0f1115; --fg:#f2f4f8; --muted:#8b93a3; --accent:#4f8cff; --ok:#34c759; --err:#ff453a; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f3f4f7; --fg:#14161a; --muted:#6b7280; } }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; }
+  body { background:var(--bg); color:var(--fg); font:17px/1.4 system-ui,sans-serif;
+         display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; }
+  h1 { font-size:22px; margin:0 0 28px; user-select:none; -webkit-user-select:none; }
+  button { width:100%; max-width:360px; padding:20px; border:0; border-radius:16px; background:var(--accent); color:#fff; font-size:20px; font-weight:600; }
+  button:disabled { opacity:.5; }
+  #status { margin-top:22px; min-height:26px; font-size:18px; }
+  .ok { color:var(--ok); } .err { color:var(--err); }
+  #setup { display:none; width:100%; max-width:360px; }
+  #setup input { width:100%; padding:14px; border-radius:12px; border:1px solid #8b93a366; background:transparent; color:var(--fg); font-size:16px; margin-bottom:12px; }
+  #main { display:none; width:100%; max-width:360px; }
+  small { color:var(--muted); display:block; margin-bottom:12px; }
+</style>
+</head>
+<body>
+  <h1 id="title">📺 TV'ye resim gönder</h1>
+
+  <div id="main">
+    <input id="file" type="file" accept="image/*" hidden>
+    <button id="pick">Fotoğraf seç</button>
+    <div id="status"></div>
+  </div>
+
+  <div id="setup">
+    <small>İlk kurulum: sana verilen kurulum kodunu yapıştır.</small>
+    <input id="code" type="password" autocomplete="off" placeholder="Kurulum kodu">
+    <button id="saveCode">Kaydet</button>
+    <div id="setupStatus" class="err"></div>
+  </div>
+
+<script>
+const FILE_PATH = "gunluk.png";
+const BRANCH = "main";
+const $ = id => document.getElementById(id);
+
+function load(k){ try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } }
+function store(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+function clear(){ try { localStorage.clear(); } catch(e){} }
+
+// Kurulum kodu biçimi:  kullanici/depo:anahtar
+function applyCode(code) {
+  const m = String(code).trim().match(/^([^\/\s:]+)\/([^\/\s:]+):(\S+)$/);
+  if (!m) return false;
+  store("tv_owner", m[1]); store("tv_repo", m[2]); store("tv_token", m[3]);
+  return true;
+}
+
+// Kurulum linki ile tek dokunuşta kurulum:  .../index.html#kullanici/depo:anahtar
+if (location.hash.length > 1) {
+  if (applyCode(decodeURIComponent(location.hash.slice(1)))) {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+}
+
+function render() {
+  const ready = load("tv_owner") && load("tv_repo") && load("tv_token");
+  $("main").style.display = ready ? "block" : "none";
+  $("setup").style.display = ready ? "none" : "block";
+}
+render();
+
+$("saveCode").onclick = () => {
+  if (applyCode($("code").value)) { $("code").value = ""; render(); }
+  else $("setupStatus").textContent = "Kod geçersiz. Tekrar dene.";
+};
+
+// Başlığa 3 saniye basılı tutunca kurulum sıfırlanır
+let holdTimer;
+const startHold = () => { holdTimer = setTimeout(() => { clear(); render(); }, 3000); };
+const endHold = () => clearTimeout(holdTimer);
+["touchstart","mousedown"].forEach(e => $("title").addEventListener(e, startHold));
+["touchend","touchcancel","mouseup","mouseleave"].forEach(e => $("title").addEventListener(e, endHold));
+
+function setStatus(msg, cls) { $("status").textContent = msg; $("status").className = cls || ""; }
+
+$("pick").onclick = () => { $("file").value = ""; $("file").click(); };
+
+$("file").onchange = async () => {
+  const f = $("file").files[0];
+  if (!f) return;
+  $("pick").disabled = true;
+  setStatus("Gönderiliyor…");
+  try {
+    const png = await toPng(f);
+    await upload(png);
+    setStatus("Fotoğraf gönderildi ✓", "ok");
+  } catch (e) {
+    setStatus("Gönderilemedi. İnterneti kontrol edip tekrar dene.", "err");
+  } finally {
+    $("pick").disabled = false;
+  }
+};
+
+function toPng(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext("2d").drawImage(img, 0, 0);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("png")), "image/png");
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => reject(new Error("img"));
+    img.src = url;
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1]);
+    r.onerror = () => reject(new Error("read"));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function upload(blob) {
+  const owner = load("tv_owner"), repo = load("tv_repo"), token = load("tv_token");
+  const api = `https://api.github.com/repos/${owner}/${repo}/contents/${FILE_PATH}`;
+  const headers = {
+    "Authorization": "Bearer " + token,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+
+  let sha;
+  const head = await fetch(api + "?ref=" + BRANCH + "&t=" + Date.now(), { headers });
+  if (head.ok) sha = (await head.json()).sha;
+  else if (head.status !== 404) throw new Error("head " + head.status);
+
+  const body = { message: "Günlük resim " + new Date().toISOString(), content: await blobToBase64(blob), branch: BRANCH };
+  if (sha) body.sha = sha;
+
+  const put = await fetch(api, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!put.ok) throw new Error("put " + put.status);
+}
+</script>
+</body>
+</html>
