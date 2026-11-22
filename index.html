@@ -50,6 +50,7 @@
   .btn.danger { background:transparent; color:var(--err); border-color:var(--err); }
   .btn.small { min-height:40px; padding:8px 16px; font-size:14px; width:auto; display:inline-block; }
   .btn:disabled { opacity:.5; cursor:default; }
+  .btn.rot.active::after { content:"  ✓"; }
   .btn:focus-visible, .nav button:focus-visible { outline:3px solid #7aa7e0; outline-offset:2px; }
 
   .bar { height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:14px; }
@@ -152,8 +153,8 @@
       <section class="tab" id="tab-settings" hidden>
         <div class="card">
           <h2>Ekran Yönü</h2>
-          <p>Ekranın duruş şekline göre seçin. Görüntü yan yatık çıkarsa diğer dikey seçeneği deneyin.</p>
-          <button class="btn outline rot" data-rot="0">Yatay</button>
+          <p>Ekranın duruş şekline göre seçin. Görüntü yan yatık çıkarsa diğer dikey seçeneği deneyin. Seçili olanın yanında ✓ işareti görünür.</p>
+          <button class="btn outline rot" data-rot="0">Orijinal Haline Dön (Yatay)</button>
           <button class="btn outline rot" data-rot="270">Dikey (ekran saat yönünde çevrildi)</button>
           <button class="btn outline rot" data-rot="90">Dikey (ekran saat yönünün tersine çevrildi)</button>
           <button class="btn outline rot" data-rot="180">Yatay, ters çevrilmiş</button>
@@ -297,13 +298,28 @@ async function fetchRaw(path) {
   return r;
 }
 
-async function upload(blob, path, label) {
+// Son bilinen dosya sürümleri: her gönderimde sürümü ayrıca sormamak için (zaman kazandırır)
+const shaCache = {};
+
+// hintSha verilirse (biliniyorsa) dosyanın sürümünü ayrıca sorup zaman kaybetmez.
+// Bilgi eskiyse GitHub reddeder (409/422), o zaman güncelini alıp bir kez daha dener.
+async function upload(blob, path, label, hintSha) {
   const api = apiFor(path);
-  const sha = await currentSha(api);
-  const body = { message: label + " " + new Date().toISOString(), content: await blobToBase64(blob), branch: BRANCH };
-  if (sha) body.sha = sha;
-  const put = await fetch(api.url, { method: "PUT", headers: { ...api.headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (!put.ok) throw new Error("put " + put.status);
+  const content = await blobToBase64(blob);
+  let sha = (hintSha !== undefined) ? hintSha
+          : (path in shaCache) ? shaCache[path]
+          : await currentSha(api);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const body = { message: label + " " + new Date().toISOString(), content, branch: BRANCH };
+    if (sha) body.sha = sha;
+    const put = await fetch(api.url, { method: "PUT", headers: { ...api.headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (put.ok) {
+      try { shaCache[path] = (await put.json()).content.sha; } catch (e) { delete shaCache[path]; }
+      return;
+    }
+    if ((put.status === 409 || put.status === 422) && attempt === 0) { sha = await currentSha(api); continue; }
+    throw new Error("put " + put.status);
+  }
 }
 
 // true: silindi, false: zaten yoktu
@@ -317,18 +333,34 @@ async function remove(path, label) {
     body: JSON.stringify({ message: label + " " + new Date().toISOString(), sha, branch: BRANCH })
   });
   if (!del.ok) throw new Error("del " + del.status);
+  delete shaCache[path];
   return true;
 }
 
-function toPng(file) {
+// Küçük PNG'yi olduğu gibi gönderir (en hızlısı). Diğerlerini (telefon fotoğrafı, büyük dosya)
+// ekrana yetecek boyuta küçültüp JPEG yapar. Çizim sırasında telefonun döndürme bilgisi de uygulanır.
+const MAX_SIDE = 2560;
+const KEEP_PNG_BYTES = 3 * 1024 * 1024;
+
+async function prepareImage(file) {
+  if (file.type === "image/png" && file.size <= KEEP_PNG_BYTES) return file;
+  return shrink(file);
+}
+
+function shrink(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
+      const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
       const c = document.createElement("canvas");
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
-      c.getContext("2d").drawImage(img, 0, 0);
-      c.toBlob(b => b ? resolve(b) : reject(new Error("png")), "image/png");
+      c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const g = c.getContext("2d");
+      g.fillStyle = "#ffffff";            // saydam alanlar beyaz olsun
+      g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("jpeg")), "image/jpeg", 0.93);
       URL.revokeObjectURL(url);
     };
     img.onerror = () => reject(new Error("img"));
@@ -447,7 +479,7 @@ window.addEventListener("online", wake);
 
 // ---------- Sayfanın kendi kendini güncellemesi ----------
 // Sayfada değişiklik yapıldığında bu numara da değiştirilir
-const PAGE_VERSION = "2026-11-22-3";
+const PAGE_VERSION = "2026-11-22-5";
 
 async function checkForUpdate() {
   if (location.protocol === "file:") return;
@@ -508,12 +540,14 @@ $("photoFile").onchange = async () => {
   if (!f) return;
   busy(true);
   setStatus("Fotoğraf gönderiliyor…");
+  const t0 = Date.now();
   try {
-    const png = await toPng(f);
-    await upload(png, PHOTO_PATH, "Günlük resim");
+    const img = await prepareImage(f);
+    await upload(img, PHOTO_PATH, "Günlük resim", shownPhotoSha);
+    const sn = ((Date.now() - t0) / 1000).toFixed(1).replace(".", ",");
     busy(false);
     showTab("home");
-    setStatus("Fotoğraf gönderildi. Ekrana birkaç saniye içinde yansır.", "ok");
+    setStatus("Fotoğraf gönderildi (" + sn + " sn). Ekrana birkaç saniye içinde yansır.", "ok");
     refreshHome(true);
   } catch (e) {
     setStatus("Fotoğraf gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.", "err");
