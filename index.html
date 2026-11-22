@@ -65,10 +65,17 @@ header h2{display:none;font-size:19px;font-weight:650}
 
 /* Önizleme: monitör + HUD */
 .stage{display:grid;place-items:center;padding:22px 12px;background:color-mix(in srgb,var(--ink) 6%,var(--surf))}
-.bezel{position:relative;background:#080b0f;border-radius:14px;padding:11px 11px 22px;box-shadow:0 16px 30px -18px rgba(0,0,0,.6);transition:width .25s}
-.portrait .bezel{width:min(62vw,290px)}
-.landscape .bezel{width:min(100%,560px)}
-.led{position:absolute;right:18px;bottom:8px;width:6px;height:6px;border-radius:50%;background:#2b333b}
+.tvstand{display:flex;flex-direction:column;align-items:center;transition:width .25s}
+.portrait .tvstand{width:min(56vw,240px)}
+.landscape .tvstand{width:min(100%,460px)}
+.bezel{position:relative;width:100%;background:#0a0c0f;border-radius:10px;padding:9px 8px 13px;border:1px solid #20252b;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 10px 22px -14px rgba(0,0,0,.7)}
+.bezel::before{content:"";position:absolute;top:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#2a3038}
+.pole{width:11%;min-width:26px;height:58px;margin-top:-1px;background:linear-gradient(90deg,#101317,#2b3036 50%,#101317);border-radius:0 0 2px 2px}
+.base{position:relative;width:86%;height:22px;background:linear-gradient(#20252a,#14171a);border-radius:5px 5px 11px 11px;box-shadow:0 14px 14px -12px rgba(0,0,0,.55)}
+.base::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:rgba(255,255,255,.1);border-radius:5px 5px 0 0}
+.wheel{position:absolute;bottom:-9px;width:15px;height:15px;border-radius:50%;background:#8a9097;border:3px solid #23272c}
+.wheel.l{left:7%}.wheel.r{right:7%}
+.led{position:absolute;right:14px;bottom:4px;width:5px;height:5px;border-radius:50%;background:#2b333b}
 .on .led{background:#3fa56b;box-shadow:0 0 3px 1px rgba(63,165,107,.4)}
 .screen{position:relative;background:#000;border-radius:4px;overflow:hidden;display:grid;place-items:center;color:#c9d1db;font-size:14px;text-align:center}
 .portrait .screen{aspect-ratio:9/16}
@@ -155,7 +162,7 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
   body.ready header h1{display:none}
   body.ready header h2{display:block}
   .page{padding-bottom:64px}
-  .portrait .bezel{width:min(100%,290px)}
+  .portrait .tvstand{width:min(100%,260px)}
   .btn{min-height:54px}
   .rot{padding:18px 10px 14px}
   #toast{bottom:52px}
@@ -204,13 +211,14 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
             <div class="pn" id="tv">
               <div class="pn-h"><h3>Canlı önizleme</h3><span class="tag">Yenileme 10 sn</span></div>
               <div class="stage" id="stage">
-                <div class="bezel"><div class="screen">
+                <div class="tvstand"><div class="bezel"><div class="screen">
                   <img id="shot" alt="Ekranda yayınlanan fotoğraf" hidden>
                   <video id="hvid" muted loop playsinline hidden></video>
                   <div class="idle" id="idle"><span id="idleText"></span></div>
                   <div class="hud"><span class="chip"><i></i><span id="hudLive">Yükleniyor</span></span><span class="chip" id="hudOri">Dikey 9:16</span></div>
                   <div class="hud b"><span class="chip" id="hudSrc">Kaynak yok</span></div>
                 </div><i class="led"></i></div>
+                <div class="pole"></div><div class="base"><i class="wheel l"></i><i class="wheel r"></i></div></div>
               </div>
               <div class="pn-f"><span id="checked">Kontrol ediliyor…</span><span class="dnd">Sürükleyip bırakabilirsiniz</span></div>
             </div>
@@ -588,8 +596,8 @@ $("videoFile").onchange=async()=>{
 function applyOrientation(deg){
   store("tv_rot",String(deg));
   const por=(deg===90||deg===270);
-  $("tv").className="pn "+(por?"portrait":"landscape")+($("pill").classList.contains("on")?" on":"");
-  $("hudOri").textContent=por?"Dikey 9:16":"Yatay 16:9";
+  $("tv").className="pn portrait"+($("pill").classList.contains("on")?" on":"");
+  $("hudOri").textContent="Dikey 9:16";
   $("rowOri").textContent={0:"Yatay",180:"Yatay, ters",270:"Dikey, saat yönünde",90:"Dikey, saat yönünün tersine"}[deg];
   document.querySelectorAll(".rot").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.rot)===deg));
 }
@@ -621,7 +629,7 @@ $("test").onclick=async()=>{
 
 // ---------- Sayfanın kendi kendini güncellemesi ----------
 // Sayfada değişiklik yapıldığında bu numara da değiştirilir
-const PAGE_VERSION="2026-11-22-13";
+const PAGE_VERSION="2026-11-22-15";
 async function checkForUpdate(){
   if(location.protocol==="file:")return;
   try{
