@@ -102,8 +102,6 @@ header h2{display:none;font-size:19px;font-weight:650}
 .row .btn{flex:1 1 150px}
 .row.stack{flex-direction:column}
 .row.stack .btn{flex:none;width:100%}
-.player{position:relative;aspect-ratio:16/9;display:grid;place-items:center;margin-bottom:14px;border-radius:6px;background:#000;color:#9aa5b1;font-size:14px;overflow:hidden}
-.player video{width:100%;height:100%}
 
 .orient{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .rot{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 8px 12px;border:1.5px solid var(--line);border-radius:6px;background:transparent;font-size:13.5px;font-weight:600;text-align:center}
@@ -144,7 +142,10 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
 @media(max-width:699px){
   .side,.sb{display:none!important}
   .dnd{display:none}
-  header{background:var(--side);color:#fff;border:0}
+  header{background:var(--side);color:#fff;border:0;flex-wrap:wrap;row-gap:10px;padding-bottom:12px}
+  header h1{font-size:19px;white-space:nowrap}
+  header .pill{order:3;flex:1 0 100%;max-width:none;min-height:40px;font-size:14px}
+  header .pill span{overflow:visible;text-overflow:clip;white-space:normal}
   header .pill{background:rgba(255,255,255,.1);border-color:transparent}
   header .ibtn{background:rgba(255,255,255,.1);border-color:transparent}
   #bar span{background:#c9d0d7}
@@ -240,9 +241,7 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
             <div class="pn-h"><h3>Tanıtım videosu</h3></div>
             <div class="pn-b">
               <p>Yayında fotoğraf yokken ekranda sürekli oynar.</p>
-              <div class="player" id="player"><span id="playerHint">Önizleme için “Önizle”ye dokunun</span><video id="vid" controls loop muted playsinline hidden></video></div>
               <div class="row">
-                <button class="btn act" id="vPrev" disabled>Önizle</button>
                 <button class="btn pri act" id="pickVideo">Yeni video seç</button>
               </div>
             </div>
@@ -345,7 +344,7 @@ $("dNo").onclick=()=>$("dlg").close("no");
 function busy(on){
   document.querySelectorAll(".act").forEach(b=>{b.disabled=on});
   $("bar").hidden=!on;
-  if(!on){$("del").disabled=!photoExists;$("vPrev").disabled=!videoExists}
+  if(!on){$("del").disabled=!photoExists}
 }
 function setLive(text,on){
   $("pillText").textContent=text;$("sbState").textContent=text;$("hudLive").textContent=on?"Yayında":text;
@@ -458,7 +457,7 @@ function shrink(file){
 const blobToBase64=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(new Error("read"));r.readAsDataURL(blob)});
 
 // ---------- Yayın ekranı ----------
-let shownVideoSha=null,homeVideoURL=null,shownPhotoSha=null,photoURL=null,videoURL=null,polling=false,photoExists=false,videoExists=false;
+let shownVideoSha=null,homeVideoURL=null,shownPhotoSha=null,photoURL=null,polling=false,photoExists=false,videoExists=false;
 
 function why(e){
   const m=/ (\d{3})$/.exec((e&&e.message)||""),c=m?Number(m[1]):0;
@@ -504,9 +503,11 @@ async function refreshHome(force){
           $("idleText").textContent="Tanıtım videosu yükleniyor…";
           const r=await fetchRaw(VIDEO_PATH);
           if(r){
-            const url=URL.createObjectURL(await r.blob()),hv=$("hvid");
+            // iOS Safari blob türü video/mp4 değilse oynatmaz
+            const raw=await r.blob(),url=URL.createObjectURL(new Blob([raw],{type:"video/mp4"})),hv=$("hvid");
+            hv.muted=true;hv.defaultMuted=true;hv.setAttribute("muted","");hv.setAttribute("playsinline","");
             hv.src=url;if(homeVideoURL)URL.revokeObjectURL(homeVideoURL);homeVideoURL=url;
-            shownVideoSha=v.sha;hv.hidden=false;hv.play().catch(()=>{});
+            shownVideoSha=v.sha;hv.hidden=false;hv.load();hv.play().catch(()=>{});
           }
         }
         if(shownVideoSha===v.sha)$("idle").hidden=true;
@@ -566,34 +567,19 @@ $("del").onclick=async()=>{
 };
 
 // ---------- Video ----------
-function stopVideo(){
-  const v=$("vid");try{v.pause()}catch(e){}
-  v.hidden=true;v.removeAttribute("src");v.load();$("playerHint").hidden=false;
-  if(videoURL){URL.revokeObjectURL(videoURL);videoURL=null}
-}
 async function refreshVideoInfo(){
   try{
     const v=await info(VIDEO_PATH);videoExists=!!v;
     $("vState").textContent=v?"Yüklü, "+fmt(v.size):"Henüz yüklenmemiş";
-    $("vPrev").disabled=!v;
   }catch(e){$("vState").textContent="Durum alınamadı"}
 }
-$("vPrev").onclick=async()=>{
-  busy(true);$("playerHint").textContent="Video indiriliyor…";
-  try{
-    const r=await fetchRaw(VIDEO_PATH);if(!r)throw new Error("yok");
-    stopVideo();videoURL=URL.createObjectURL(await r.blob());
-    const v=$("vid");v.src=videoURL;v.hidden=false;$("playerHint").hidden=true;v.play().catch(()=>{});
-  }catch(e){$("playerHint").textContent="Video önizlenemedi. Tekrar deneyin."}
-  finally{busy(false)}
-};
 $("pickVideo").onclick=()=>{$("videoFile").value="";$("videoFile").click()};
 $("videoFile").onchange=async()=>{
   const f=$("videoFile").files[0];if(!f)return;
   if(f.size>MAX_VIDEO_MB*1024*1024){toast("Video "+fmt(f.size)+". En fazla "+MAX_VIDEO_MB+" MB yüklenebilir, küçültüp tekrar deneyin.","err");return}
   if(!await ask({title:"Tanıtım videosu değişsin mi?",text:f.name+", "+fmt(f.size)+". Yükleme birkaç dakika sürebilir, uygulamayı kapatmayın.",ok:"Yükle"}))return;
   busy(true);
-  try{await upload(f,VIDEO_PATH,"Tanıtım videosu");stopVideo();toast("Video yüklendi.","ok");refreshVideoInfo()}
+  try{await upload(f,VIDEO_PATH,"Tanıtım videosu");toast("Video yüklendi.","ok");refreshVideoInfo()}
   catch(e){toast("Video yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.","err")}
   finally{busy(false)}
 };
@@ -635,7 +621,7 @@ $("test").onclick=async()=>{
 
 // ---------- Sayfanın kendi kendini güncellemesi ----------
 // Sayfada değişiklik yapıldığında bu numara da değiştirilir
-const PAGE_VERSION="2026-11-22-12";
+const PAGE_VERSION="2026-11-22-13";
 async function checkForUpdate(){
   if(location.protocol==="file:")return;
   try{
