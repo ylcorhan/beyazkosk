@@ -64,29 +64,26 @@ header h2{display:none;font-size:19px;font-weight:650}
 .kv b{font-weight:600;text-align:right}
 
 /* Önizleme: monitör + HUD */
-.stage{display:grid;place-items:center;padding:22px 12px;background:color-mix(in srgb,var(--ink) 6%,var(--surf))}
+.stage{display:grid;place-items:center;padding:16px 12px 24px;background:color-mix(in srgb,var(--ink) 6%,var(--surf))}
 .tvstand{display:flex;flex-direction:column;align-items:center;transition:width .25s}
-.portrait .tvstand{width:min(56vw,240px)}
+.portrait .tvstand{width:clamp(130px,min(56vw,240px,calc((100vh - 450px)/1.78)),240px)}
+@supports(height:100svh){.portrait .tvstand{width:clamp(130px,min(56vw,240px,calc((100svh - 450px)/1.78)),240px)}}
 .landscape .tvstand{width:min(100%,460px)}
-.bezel{position:relative;width:100%;background:#0a0c0f;border-radius:10px;padding:9px 8px 13px;border:1px solid #20252b;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 10px 22px -14px rgba(0,0,0,.7)}
-.bezel::before{content:"";position:absolute;top:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#2a3038}
-.pole{width:11%;min-width:26px;height:58px;margin-top:-1px;background:linear-gradient(90deg,#101317,#2b3036 50%,#101317);border-radius:0 0 2px 2px}
-.base{position:relative;width:86%;height:22px;background:linear-gradient(#20252a,#14171a);border-radius:5px 5px 11px 11px;box-shadow:0 14px 14px -12px rgba(0,0,0,.55)}
+.bezel{position:relative;width:100%;background:#0a0c0f;border-radius:10px;padding:7px 6px 11px;border:1px solid #20252b;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 10px 22px -14px rgba(0,0,0,.7)}
+.bezel::before{content:"";position:absolute;top:2px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#2a3038}
+.pole{width:11%;min-width:22px;height:38px;margin-top:-1px;background:linear-gradient(90deg,#101317,#2b3036 50%,#101317);border-radius:0 0 2px 2px}
+.base{position:relative;width:86%;height:18px;background:linear-gradient(#20252a,#14171a);border-radius:5px 5px 11px 11px;box-shadow:0 14px 14px -12px rgba(0,0,0,.55)}
 .base::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:rgba(255,255,255,.1);border-radius:5px 5px 0 0}
 .wheel{position:absolute;bottom:-9px;width:15px;height:15px;border-radius:50%;background:#8a9097;border:3px solid #23272c}
 .wheel.l{left:7%}.wheel.r{right:7%}
-.led{position:absolute;right:14px;bottom:4px;width:5px;height:5px;border-radius:50%;background:#2b333b}
+.led{position:absolute;right:12px;bottom:3px;width:5px;height:5px;border-radius:50%;background:#2b333b}
 .on .led{background:#3fa56b;box-shadow:0 0 3px 1px rgba(63,165,107,.4)}
 .screen{position:relative;background:#000;border-radius:4px;overflow:hidden;display:grid;place-items:center;color:#c9d1db;font-size:14px;text-align:center}
 .portrait .screen{aspect-ratio:9/16}
 .landscape .screen{aspect-ratio:16/9}
-.screen img,.screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.screen img,.screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.idle{display:none!important}
 .idle{padding:16px}
-.hud{position:absolute;z-index:2;left:8px;right:8px;top:8px;display:flex;justify-content:space-between;gap:6px;pointer-events:none}
-.hud.b{top:auto;bottom:8px;justify-content:flex-start}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:4px;background:rgba(8,13,20,.74);color:#e8edf3;font-size:11.5px;font-weight:600;line-height:1.4}
-.chip i{width:6px;height:6px;border-radius:50%;background:#8a95a1}
-.on .chip i{background:#58b37f}
 .drop .screen{outline:3px dashed var(--acc);outline-offset:-6px}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 20px;border-radius:6px;border:1px solid var(--line);background:var(--surf);color:var(--ink);font-size:15px;font-weight:600;letter-spacing:.01em;box-shadow:0 1px 0 rgba(29,34,39,.07);transition:background .12s,border-color .12s,transform .05s}
@@ -177,6 +174,7 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
     <div class="brand"><span class="mark"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><div><b id="brandName">Ekran Yönetimi</b><small>İçerik paneli</small></div></div>
     <div class="menu" role="tablist">
       <button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Yayın</button>
+      <button role="tab" data-tab="photo" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 9"/></svg>Fotoğraf</button>
       <button role="tab" data-tab="video" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>Video</button>
       <button role="tab" data-tab="settings" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Ayarlar</button>
     </div>
@@ -215,8 +213,6 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
                   <img id="shot" alt="Ekranda yayınlanan fotoğraf" hidden>
                   <video id="hvid" muted loop playsinline hidden></video>
                   <div class="idle" id="idle"><span id="idleText"></span></div>
-                  <div class="hud"><span class="chip"><i></i><span id="hudLive">Yükleniyor</span></span><span class="chip" id="hudOri">Dikey 9:16</span></div>
-                  <div class="hud b"><span class="chip" id="hudSrc">Kaynak yok</span></div>
                 </div><i class="led"></i></div>
                 <div class="pole"></div><div class="base"><i class="wheel l"></i><i class="wheel r"></i></div></div>
               </div>
@@ -230,17 +226,22 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
                 <div class="kv"><span>Tanıtım videosu</span><b id="rowVideo">-</b></div>
                 <div class="kv"><span>Ekran yönü</span><b id="rowOri">-</b></div>
               </div>
-              <div class="pn">
-                <div class="pn-h"><h3>Fotoğraf işlemleri</h3></div>
-                <div class="pn-b">
-                  <p>Seçtiğiniz fotoğraf onayınızdan sonra hemen yayına girer.</p>
-                  <div class="row stack">
-                    <button class="btn pri big act" id="pick"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span><span><b>Fotoğraf seç</b><small>JPG veya PNG, göndermeden önce önizlenir</small></span></button>
-                    <button class="btn warn big act" id="del"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2m-7 0 1 12h8l1-12"/></svg></span><span><b>Fotoğrafı kaldır</b><small>Ekran tanıtım videosuna döner</small></span></button>
-                  </div>
-                </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-photo" hidden>
+          <div class="pn">
+            <div class="pn-h"><h3>Fotoğraf</h3></div>
+            <div class="pn-b">
+              <p>Seçtiğiniz fotoğraf onayınızdan sonra hemen yayına girer. Fotoğraf yayındayken tanıtım videosu gösterilmez.</p>
+              <div class="row stack">
+                <button class="btn pri big act" id="pick"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span><span><b>Fotoğraf seç</b><small>JPG veya PNG, göndermeden önce önizlenir</small></span></button>
+                <button class="btn warn big act" id="del"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2m-7 0 1 12h8l1-12"/></svg></span><span><b>Fotoğrafı kaldır</b><small>Ekran tanıtım videosuna döner</small></span></button>
               </div>
             </div>
+            <div class="kv"><span>Durum</span><b id="pState">Kontrol ediliyor…</b></div>
+            <div class="kv"><span>Biçim</span><b>JPG veya PNG</b></div>
           </div>
         </section>
 
@@ -301,6 +302,7 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
 <nav id="nav" hidden aria-label="Bölümler">
   <div role="tablist">
     <button role="tab" data-tab="home" aria-selected="true"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>Yayın</button>
+    <button role="tab" data-tab="photo" aria-selected="false"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 9"/></svg></span>Fotoğraf</button>
     <button role="tab" data-tab="video" aria-selected="false"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></span>Video</button>
     <button role="tab" data-tab="settings" aria-selected="false"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></span>Ayarlar</button>
   </div>
@@ -355,7 +357,7 @@ function busy(on){
   if(!on){$("del").disabled=!photoExists}
 }
 function setLive(text,on){
-  $("pillText").textContent=text;$("sbState").textContent=text;$("hudLive").textContent=on?"Yayında":text;
+  $("pillText").textContent=text;$("sbState").textContent=text;
   $("pill").classList.toggle("on",!!on);$("sb").classList.toggle("on",!!on);$("tv").classList.toggle("on",!!on);
 }
 
@@ -363,13 +365,14 @@ function setLive(text,on){
 let currentTab="home";
 function showTab(name){
   currentTab=name;
-  ["home","video","settings"].forEach(t=>{$("tab-"+t).hidden=(t!==name)});
+  ["home","photo","video","settings"].forEach(t=>{$("tab-"+t).hidden=(t!==name)});
   document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===name));
-  $("pageTitle").textContent={home:"Yayın",video:"Tanıtım videosu",settings:"Ayarlar"}[name];
+  $("pageTitle").textContent={home:"Yayın",photo:"Fotoğraf",video:"Tanıtım videosu",settings:"Ayarlar"}[name];
   window.scrollTo(0,0);
   const hv=$("hvid");
   if(name==="home"){if(!hv.hidden)hv.play().catch(()=>{})}else{try{hv.pause()}catch(e){}}
   if(name==="home")refreshHome();
+  if(name==="photo")refreshPhotoInfo();
   if(name==="video")refreshVideoInfo();
   if(name==="settings")$("repoName").textContent=load("tv_owner")+"/"+load("tv_repo");
 }
@@ -492,7 +495,6 @@ async function refreshHome(force){
     $("rowNow").textContent=p?"Fotoğraf":v?"Tanıtım videosu":"Yok";
     $("rowPhoto").textContent=p?"Yüklü, "+fmt(p.size):"Yok";
     $("rowVideo").textContent=v?"Yüklü, "+fmt(v.size):"Yok";
-    $("hudSrc").textContent=p?"Fotoğraf":v?"Tanıtım videosu":"İçerik yok";
     if(p){
       if(p.sha!==shownPhotoSha){
         const r=await fetchRaw(PHOTO_PATH);
@@ -529,7 +531,7 @@ async function refreshHome(force){
   }catch(e){setLive("Bağlantı kurulamadı",false);$("checked").textContent=why(e)}
   finally{polling=false;$("refresh").classList.remove("spin")}
 }
-$("refresh").onclick=()=>{if(currentTab==="home")refreshHome(true);else if(currentTab==="video")refreshVideoInfo()};
+$("refresh").onclick=()=>{if(currentTab==="home")refreshHome(true);else if(currentTab==="photo")refreshPhotoInfo();else if(currentTab==="video")refreshVideoInfo()};
 setInterval(()=>{if(!document.hidden&&currentTab==="home")refreshHome()},POLL_MS);
 function wake(){if(document.hidden)return;if(currentTab==="home")refreshHome();checkForUpdate()}
 document.addEventListener("visibilitychange",wake);
@@ -569,10 +571,19 @@ $("del").onclick=async()=>{
   busy(true);
   try{
     const r=await remove(PHOTO_PATH,"Günlük resim silindi");
-    busy(false);toast(r?"Fotoğraf kaldırıldı.":"Kaldırılacak fotoğraf yok.",r?"ok":"");refreshHome(true);
+    busy(false);toast(r?"Fotoğraf kaldırıldı.":"Kaldırılacak fotoğraf yok.",r?"ok":"");refreshHome(true);refreshPhotoInfo();
   }catch(e){toast("Fotoğraf kaldırılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.","err")}
   finally{busy(false)}
 };
+
+// ---------- Fotoğraf sekmesi ----------
+async function refreshPhotoInfo(){
+  try{
+    const p=await info(PHOTO_PATH);photoExists=!!p;
+    $("pState").textContent=p?"Yayında, "+fmt(p.size):"Fotoğraf yok";
+    $("del").disabled=!photoExists;
+  }catch(e){$("pState").textContent="Durum alınamadı"}
+}
 
 // ---------- Video ----------
 async function refreshVideoInfo(){
@@ -597,7 +608,6 @@ function applyOrientation(deg){
   store("tv_rot",String(deg));
   const por=(deg===90||deg===270);
   $("tv").className="pn portrait"+($("pill").classList.contains("on")?" on":"");
-  $("hudOri").textContent="Dikey 9:16";
   $("rowOri").textContent={0:"Yatay",180:"Yatay, ters",270:"Dikey, saat yönünde",90:"Dikey, saat yönünün tersine"}[deg];
   document.querySelectorAll(".rot").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.rot)===deg));
 }
@@ -629,7 +639,7 @@ $("test").onclick=async()=>{
 
 // ---------- Sayfanın kendi kendini güncellemesi ----------
 // Sayfada değişiklik yapıldığında bu numara da değiştirilir
-const PAGE_VERSION="2026-11-22-15";
+const PAGE_VERSION="2026-11-22-17";
 async function checkForUpdate(){
   if(location.protocol==="file:")return;
   try{
