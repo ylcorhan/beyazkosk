@@ -3,43 +3,110 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TV Resim</title>
+<meta name="theme-color" content="#16294a">
+<title>Ekran Yönetim Paneli</title>
 <style>
-  :root { --bg:#0f1115; --fg:#f2f4f8; --muted:#8b93a3; --accent:#4f8cff; --ok:#34c759; --err:#ff453a; }
-  @media (prefers-color-scheme: light) { :root { --bg:#f3f4f7; --fg:#14161a; --muted:#6b7280; } }
+  :root {
+    --bg:#f3f4f6; --card:#ffffff; --fg:#1a2230; --muted:#5d6877; --line:#dfe3e8;
+    --head:#16294a; --brand:#1f3a5f; --brand-fg:#ffffff;
+    --ok:#1e7a46; --ok-bg:#e8f5ee; --err:#b3261e; --err-bg:#fdecea; --info:#334155; --info-bg:#eef1f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0f1318; --card:#171c23; --fg:#e8ebf0; --muted:#9aa5b4; --line:#2a323c;
+      --head:#0b1220; --brand:#3b6aa6; --brand-fg:#ffffff;
+      --ok:#6fcf97; --ok-bg:#12261b; --err:#ff8a80; --err-bg:#2c1614; --info:#c5cedb; --info-bg:#1e252e;
+    }
+  }
   * { box-sizing:border-box; }
-  html,body { height:100%; margin:0; }
-  body { background:var(--bg); color:var(--fg); font:17px/1.4 system-ui,sans-serif;
-         display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; }
-  h1 { font-size:22px; margin:0 0 28px; user-select:none; -webkit-user-select:none; }
-  button { width:100%; max-width:360px; padding:20px; border:0; border-radius:16px; background:var(--accent); color:#fff; font-size:20px; font-weight:600; }
-  button:disabled { opacity:.5; }
-  #status { margin-top:22px; min-height:26px; font-size:18px; }
-  .ok { color:var(--ok); } .err { color:var(--err); }
-  #setup { display:none; width:100%; max-width:360px; }
-  #setup input { width:100%; padding:14px; border-radius:12px; border:1px solid #8b93a366; background:transparent; color:var(--fg); font-size:16px; margin-bottom:12px; }
-  #main { display:none; width:100%; max-width:360px; }
-  small { color:var(--muted); display:block; margin-bottom:12px; }
+  html, body { margin:0; }
+  body {
+    background:var(--bg); color:var(--fg); min-height:100vh;
+    font:16px/1.5 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust:100%;
+  }
+  header { background:var(--head); color:#fff; padding:22px 16px 20px; }
+  .wrap { max-width:520px; margin:0 auto; }
+  header h1 { margin:0; font-size:20px; font-weight:600; letter-spacing:.2px; user-select:none; -webkit-user-select:none; }
+  header p { margin:4px 0 0; font-size:13px; color:#b9c4d6; }
+  main { padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:14px; }
+  .card h2 { margin:0 0 4px; font-size:16px; font-weight:600; }
+  .card p { margin:0 0 14px; font-size:14px; color:var(--muted); }
+  .hint { margin:10px 0 0 !important; font-size:12.5px !important; }
+  .btn {
+    display:block; width:100%; min-height:50px; padding:13px 16px; border-radius:8px;
+    font:inherit; font-size:16px; font-weight:600; cursor:pointer; text-align:center;
+    border:1px solid var(--brand); background:var(--brand); color:var(--brand-fg);
+  }
+  .btn + .btn { margin-top:10px; }
+  .btn.outline { background:transparent; color:var(--brand); }
+  @media (prefers-color-scheme: dark) { .btn.outline { color:#9dbbe6; border-color:#4a6c9c; } }
+  .btn.danger { background:transparent; color:var(--err); border-color:var(--err); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .btn:focus-visible { outline:3px solid #7aa7e0; outline-offset:2px; }
+  .bar { height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:14px; }
+  .bar[hidden] { display:none; }
+  .bar span { display:block; width:35%; height:100%; background:var(--brand); animation:slide 1.1s ease-in-out infinite; }
+  @keyframes slide { from { transform:translateX(-100%); } to { transform:translateX(300%); } }
+  #status { margin-bottom:14px; padding:12px 14px; border-radius:8px; font-size:14.5px; border-left:4px solid var(--info); background:var(--info-bg); color:var(--info); }
+  #status:empty { display:none; }
+  #status.ok  { border-left-color:var(--ok);  background:var(--ok-bg);  color:var(--ok); }
+  #status.err { border-left-color:var(--err); background:var(--err-bg); color:var(--err); }
+  .field { width:100%; padding:13px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--fg); font:inherit; margin-bottom:12px; }
+  #setupStatus { margin-top:12px; font-size:14px; color:var(--err); }
+  footer { max-width:520px; margin:0 auto; padding:0 16px 28px; font-size:12.5px; color:var(--muted); }
+  #main, #setup { display:none; }
 </style>
 </head>
 <body>
-  <h1 id="title">📺 TV'ye resim gönder</h1>
+  <header>
+    <div class="wrap">
+      <h1 id="title">Ekran Yönetim Paneli</h1>
+      <p>Mekan ekranı içerik yönetimi</p>
+    </div>
+  </header>
 
-  <div id="main">
-    <input id="file" type="file" accept="image/*" hidden>
-    <button id="pick">Fotoğraf seç</button>
-    <div id="status"></div>
-  </div>
+  <main class="wrap">
+    <div id="main">
+      <input id="photoFile" type="file" accept="image/*" hidden>
+      <input id="videoFile" type="file" accept="video/*" hidden>
 
-  <div id="setup">
-    <small>İlk kurulum: sana verilen kurulum kodunu yapıştır.</small>
-    <input id="code" type="password" autocomplete="off" placeholder="Kurulum kodu">
-    <button id="saveCode">Kaydet</button>
-    <div id="setupStatus" class="err"></div>
-  </div>
+      <div class="bar" id="bar" hidden><span></span></div>
+      <div id="status" role="status" aria-live="polite"></div>
+
+      <section class="card">
+        <h2>Fotoğraf</h2>
+        <p>Gönderilen fotoğraf ekranda yayınlanır. Kaldırıldığında ekran tanıtım videosuna döner.</p>
+        <button class="btn" id="pick">Fotoğraf Gönder</button>
+        <button class="btn danger" id="del">Fotoğrafı Kaldır</button>
+      </section>
+
+      <section class="card">
+        <h2>Tanıtım Videosu</h2>
+        <p>Fotoğraf yayında değilken ekranda sürekli oynatılır.</p>
+        <button class="btn outline" id="pickVideo">Videoyu Değiştir</button>
+        <p class="hint">MP4 biçimi, en fazla 30 MB.</p>
+      </section>
+    </div>
+
+    <div id="setup">
+      <section class="card">
+        <h2>İlk Kurulum</h2>
+        <p>Size iletilen kurulum kodunu aşağıdaki alana yapıştırın.</p>
+        <input class="field" id="code" type="password" autocomplete="off" placeholder="Kurulum kodu">
+        <button class="btn" id="saveCode">Kaydet</button>
+        <div id="setupStatus"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>Değişiklikler ekrana yaklaşık 2 dakika içinde yansır.</footer>
 
 <script>
-const FILE_PATH = "gunluk.png";
+const PHOTO_PATH = "gunluk.png";
+const VIDEO_PATH = "tanitim.mp4";
+const MAX_VIDEO_MB = 30;
 const BRANCH = "main";
 const $ = id => document.getElementById(id);
 
@@ -70,8 +137,8 @@ function render() {
 render();
 
 $("saveCode").onclick = () => {
-  if (applyCode($("code").value)) { $("code").value = ""; render(); }
-  else $("setupStatus").textContent = "Kod geçersiz. Tekrar dene.";
+  if (applyCode($("code").value)) { $("code").value = ""; $("setupStatus").textContent = ""; render(); }
+  else $("setupStatus").textContent = "Kod geçersiz. Lütfen tekrar deneyin.";
 };
 
 // Başlığa 3 saniye basılı tutunca kurulum sıfırlanır
@@ -82,25 +149,68 @@ const endHold = () => clearTimeout(holdTimer);
 ["touchend","touchcancel","mouseup","mouseleave"].forEach(e => $("title").addEventListener(e, endHold));
 
 function setStatus(msg, cls) { $("status").textContent = msg; $("status").className = cls || ""; }
+function busy(on) {
+  $("pick").disabled = on; $("del").disabled = on; $("pickVideo").disabled = on;
+  $("bar").hidden = !on;
+}
 
-$("pick").onclick = () => { $("file").value = ""; $("file").click(); };
+// ---------- Fotoğraf gönder ----------
+$("pick").onclick = () => { $("photoFile").value = ""; $("photoFile").click(); };
 
-$("file").onchange = async () => {
-  const f = $("file").files[0];
+$("photoFile").onchange = async () => {
+  const f = $("photoFile").files[0];
   if (!f) return;
-  $("pick").disabled = true;
-  setStatus("Gönderiliyor…");
+  busy(true);
+  setStatus("Fotoğraf gönderiliyor…");
   try {
     const png = await toPng(f);
-    await upload(png);
-    setStatus("Fotoğraf gönderildi ✓", "ok");
+    await upload(png, PHOTO_PATH, "Günlük resim");
+    setStatus("Fotoğraf gönderildi.", "ok");
   } catch (e) {
-    setStatus("Gönderilemedi. İnterneti kontrol edip tekrar dene.", "err");
+    setStatus("Fotoğraf gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.", "err");
   } finally {
-    $("pick").disabled = false;
+    busy(false);
   }
 };
 
+// ---------- Fotoğrafı kaldır ----------
+$("del").onclick = async () => {
+  if (!confirm("Fotoğraf kaldırılsın mı? Ekran tanıtım videosuna dönecektir.")) return;
+  busy(true);
+  setStatus("Fotoğraf kaldırılıyor…");
+  try {
+    const r = await remove(PHOTO_PATH, "Günlük resim silindi");
+    setStatus(r ? "Fotoğraf kaldırıldı." : "Kaldırılacak fotoğraf bulunmuyor.", r ? "ok" : "");
+  } catch (e) {
+    setStatus("Fotoğraf kaldırılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.", "err");
+  } finally {
+    busy(false);
+  }
+};
+
+// ---------- Videoyu değiştir ----------
+$("pickVideo").onclick = () => { $("videoFile").value = ""; $("videoFile").click(); };
+
+$("videoFile").onchange = async () => {
+  const f = $("videoFile").files[0];
+  if (!f) return;
+  if (f.size > MAX_VIDEO_MB * 1024 * 1024) {
+    setStatus("Video boyutu çok büyük (en fazla " + MAX_VIDEO_MB + " MB). Küçülterek tekrar deneyin.", "err");
+    return;
+  }
+  busy(true);
+  setStatus("Video yükleniyor. Bu işlem birkaç dakika sürebilir, lütfen sayfayı kapatmayın.");
+  try {
+    await upload(f, VIDEO_PATH, "Tanıtım videosu");
+    setStatus("Video gönderildi.", "ok");
+  } catch (e) {
+    setStatus("Video gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.", "err");
+  } finally {
+    busy(false);
+  }
+};
+
+// ---------- Yardımcılar ----------
 function toPng(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -126,25 +236,47 @@ function blobToBase64(blob) {
   });
 }
 
-async function upload(blob) {
+function apiFor(path) {
   const owner = load("tv_owner"), repo = load("tv_repo"), token = load("tv_token");
-  const api = `https://api.github.com/repos/${owner}/${repo}/contents/${FILE_PATH}`;
-  const headers = {
-    "Authorization": "Bearer " + token,
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28"
+  return {
+    url: `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+    headers: {
+      "Authorization": "Bearer " + token,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    }
   };
+}
 
-  let sha;
-  const head = await fetch(api + "?ref=" + BRANCH + "&t=" + Date.now(), { headers });
-  if (head.ok) sha = (await head.json()).sha;
-  else if (head.status !== 404) throw new Error("head " + head.status);
+// Dosya varsa sha değerini döndürür, yoksa null
+async function currentSha(api) {
+  const head = await fetch(api.url + "?ref=" + BRANCH + "&t=" + Date.now(), { headers: api.headers });
+  if (head.status === 404) return null;
+  if (!head.ok) throw new Error("head " + head.status);
+  return (await head.json()).sha;
+}
 
-  const body = { message: "Günlük resim " + new Date().toISOString(), content: await blobToBase64(blob), branch: BRANCH };
+async function upload(blob, path, label) {
+  const api = apiFor(path);
+  const sha = await currentSha(api);
+  const body = { message: label + " " + new Date().toISOString(), content: await blobToBase64(blob), branch: BRANCH };
   if (sha) body.sha = sha;
-
-  const put = await fetch(api, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const put = await fetch(api.url, { method: "PUT", headers: { ...api.headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!put.ok) throw new Error("put " + put.status);
+}
+
+// true: silindi, false: zaten yoktu
+async function remove(path, label) {
+  const api = apiFor(path);
+  const sha = await currentSha(api);
+  if (!sha) return false;
+  const del = await fetch(api.url, {
+    method: "DELETE",
+    headers: { ...api.headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ message: label + " " + new Date().toISOString(), sha, branch: BRANCH })
+  });
+  if (!del.ok) throw new Error("del " + del.status);
+  return true;
 }
 </script>
 </body>
