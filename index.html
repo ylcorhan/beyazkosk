@@ -119,9 +119,11 @@ header h2{display:none;font-size:19px;font-weight:650}
 .row.stack .btn{flex:none;width:100%}
 
 .orient{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.rot{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 8px 12px;border:1.5px solid var(--line);border-radius:6px;background:transparent;font-size:13.5px;font-weight:600;text-align:center}
-.rot[aria-pressed=true]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent)}
-.rot:disabled{opacity:.5}
+.orient.three{grid-template-columns:repeat(3,1fr)}
+.rot,.mod{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 8px 12px;border:1.5px solid var(--line);border-radius:6px;background:transparent;font-size:13.5px;font-weight:600;text-align:center}
+.mod{justify-content:center;min-height:54px;padding:10px 6px}
+.rot[aria-pressed=true],.mod[aria-pressed=true]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.rot:disabled,.mod:disabled{opacity:.5}
 .gl{position:relative;width:44px;height:28px;border:2px solid currentColor;border-radius:4px}
 .gl.v{width:28px;height:44px}
 .gl::after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:var(--acc)}
@@ -231,8 +233,20 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
             </div>
             <div class="col">
               <div class="pn">
+                <div class="pn-h"><h3>Yayın modu</h3></div>
+                <div class="pn-b">
+                  <div class="orient three">
+                    <button class="mod act" data-mod="auto" aria-pressed="false">Otomatik</button>
+                    <button class="mod act" data-mod="photo" aria-pressed="false">Fotoğraf</button>
+                    <button class="mod act" data-mod="video" aria-pressed="false">Video</button>
+                  </div>
+                  <p class="small" id="modeHelp"></p>
+                </div>
+              </div>
+              <div class="pn">
                 <div class="pn-h"><h3>Yayın durumu</h3></div>
                 <div class="kv"><span>Şu an yayında</span><b id="rowNow">-</b></div>
+                <div class="kv"><span>Mod</span><b id="rowMode">-</b></div>
                 <div class="kv"><span>Fotoğraf</span><b id="rowPhoto">-</b></div>
                 <div class="kv"><span>Tanıtım videosu</span><b id="rowVideo">-</b></div>
                 <div class="kv"><span>Ekran yönü</span><b id="rowOri">-</b></div>
@@ -245,10 +259,10 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
           <div class="pn">
             <div class="pn-h"><h3>Fotoğraf</h3></div>
             <div class="pn-b">
-              <p>Seçtiğiniz fotoğraf onayınızdan sonra hemen yayına girer. Fotoğraf yayındayken tanıtım videosu gösterilmez.</p>
+              <p>Seçtiğiniz fotoğraf onayınızdan sonra yüklenir. Otomatik modda hemen yayına girer, Video modunda ise yayın modunu değiştirene kadar gösterilmez.</p>
               <div class="row stack">
                 <button class="btn pri big act" id="pick"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span><span><b>Fotoğraf seç</b><small>JPG veya PNG, göndermeden önce önizlenir</small></span></button>
-                <button class="btn warn big act" id="del"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2m-7 0 1 12h8l1-12"/></svg></span><span><b>Fotoğrafı kaldır</b><small>Ekran tanıtım videosuna döner</small></span></button>
+                <button class="btn warn big act" id="del"><span class="ic2"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2m-7 0 1 12h8l1-12"/></svg></span><span><b>Fotoğrafı kaldır</b><small>Otomatik modda ekran tanıtım videosuna döner</small></span></button>
               </div>
             </div>
             <div class="kv"><span>Durum</span><b id="pState">Kontrol ediliyor…</b></div>
@@ -260,7 +274,7 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
           <div class="pn">
             <div class="pn-h"><h3>Tanıtım videosu</h3></div>
             <div class="pn-b">
-              <p>Yayında fotoğraf yokken ekranda sürekli oynar.</p>
+              <p>Otomatik modda yayında fotoğraf yokken, Video modunda ise her zaman ekranda sürekli oynar.</p>
               <div class="row">
                 <button class="btn pri act" id="pickVideo">Yeni video seç</button>
               </div>
@@ -329,7 +343,7 @@ dialog img{display:block;max-width:100%;max-height:44vh;margin:0 auto 14px;borde
 </dialog>
 
 <script>
-const PHOTO_PATH="gunluk.png",VIDEO_PATH="tanitim.mp4",ORIENT_PATH="yon.txt";
+const PHOTO_PATH="gunluk.png",VIDEO_PATH="tanitim.mp4",ORIENT_PATH="yon.txt",MODE_PATH="mod.txt";
 const MAX_VIDEO_MB=30,BRANCH="main",POLL_MS=10000;
 const $=id=>document.getElementById(id);
 const load=k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}};
@@ -338,6 +352,34 @@ const wipe=()=>{try{localStorage.clear()}catch(e){}};
 const isReady=()=>!!(load("tv_owner")&&load("tv_repo")&&load("tv_token"));
 const clock=()=>new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 const fmt=b=>b>=1048576?(b/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(b/1024))+" KB";
+
+// ---------- Yayın modu: auto (fotoğraf varsa fotoğraf, yoksa video), photo, video ----------
+// mod.txt dosyasına "auto", "photo" veya "video" yazılır. Dosya yoksa auto sayılır.
+const MODE_NAMES={auto:"Otomatik",photo:"Fotoğraf",video:"Video"};
+const MODE_HELP={
+  auto:"Fotoğraf varsa fotoğraf, yoksa tanıtım videosu gösterilir.",
+  photo:"Ekranda yalnızca fotoğraf gösterilir. Fotoğraf yoksa ekran boş kalır.",
+  video:"Ekranda her zaman tanıtım videosu oynar. Yüklü fotoğraf gösterilmez."
+};
+let mode=MODE_NAMES[load("tv_mode")]?load("tv_mode"):"auto";
+function applyMode(m){
+  if(!MODE_NAMES[m])m="auto";
+  mode=m;store("tv_mode",m);
+  $("rowMode").textContent=MODE_NAMES[m];$("modeHelp").textContent=MODE_HELP[m];
+  document.querySelectorAll(".mod").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mod===m));
+}
+async function readMode(){
+  try{
+    const r=await fetchRaw(MODE_PATH);if(!r)return "auto";
+    const m=(await r.text()).trim();return MODE_NAMES[m]?m:"auto";
+  }catch(e){return mode}
+}
+// Hangi içerik gösterilmeli: "photo", "video" veya null
+function pickShow(p,v){
+  if(mode==="photo")return p?"photo":null;
+  if(mode==="video")return v?"video":null;
+  return p?"photo":v?"video":null;
+}
 
 // Kurulum kodu biçimi: kullanici/depo:anahtar
 function applyCode(code){
@@ -400,7 +442,7 @@ function render(){
   $("app").hidden=!ready;$("nav").hidden=!ready;$("side").hidden=!ready;$("sb").hidden=!ready;$("pill").hidden=!ready;$("refresh").hidden=!ready;$("setup").hidden=ready;
   document.body.classList.toggle("ready",ready);
   $("repoSide").textContent=$("sbRepo").textContent=load("tv_owner")+"/"+load("tv_repo");
-  if(ready){loadOrientation();showTab("home")}
+  if(ready){applyMode(mode);loadOrientation();showTab("home")}
 }
 $("saveCode").onclick=()=>{
   if(applyCode($("code").value)){$("code").value="";$("setupErr").textContent="";render()}
@@ -410,7 +452,7 @@ $("paste").onclick=async()=>{
   try{$("code").value=await navigator.clipboard.readText();$("saveCode").click()}
   catch(e){$("setupErr").textContent="Panoya erişilemedi. Kodu alana elle yapıştırın."}
 };
-function doReset(){stopHomeVideo();wipe();shownPhotoSha=null;photoExists=false;videoExists=false;render()}
+function doReset(){stopHomeVideo();wipe();shownPhotoSha=null;photoExists=false;videoExists=false;mode="auto";render()}
 $("reset").onclick=async()=>{if(await ask({title:"Kurulum sıfırlansın mı?",text:"Bu cihazdaki bağlantı bilgisi silinir. Ekrandaki içerik etkilenmez.",ok:"Sıfırla",danger:true}))doReset()};
 let holdTimer;
 ["touchstart","mousedown"].forEach(e=>$("title").addEventListener(e,()=>{holdTimer=setTimeout(doReset,3000)}));
@@ -507,12 +549,14 @@ async function refreshHome(force){
   polling=true;$("refresh").classList.add("spin");
   try{
     if(force)shownPhotoSha=null;
-    const [p,v]=await Promise.all([info(PHOTO_PATH),info(VIDEO_PATH)]);
+    const [p,v,m]=await Promise.all([info(PHOTO_PATH),info(VIDEO_PATH),readMode()]);
+    applyMode(m);
     photoExists=!!p;videoExists=!!v;
-    $("rowNow").textContent=p?"Fotoğraf":v?"Tanıtım videosu":"Yok";
+    const show=pickShow(p,v);
+    $("rowNow").textContent=show==="photo"?"Fotoğraf":show==="video"?"Tanıtım videosu":"Yok";
     $("rowPhoto").textContent=p?"Yüklü, "+fmt(p.size):"Yok";
     $("rowVideo").textContent=v?"Yüklü, "+fmt(v.size):"Yok";
-    if(p){
+    if(show==="photo"){
       if(p.sha!==shownPhotoSha){
         const r=await fetchRaw(PHOTO_PATH);
         if(r){
@@ -524,7 +568,7 @@ async function refreshHome(force){
       $("idle").hidden=true;$("shot").hidden=false;setLive("Yayında: fotoğraf",true);
     }else{
       shownPhotoSha=null;$("shot").hidden=true;$("idle").hidden=false;
-      if(v){
+      if(show==="video"){
         setLive("Yayında: tanıtım videosu",true);
         if(v.sha!==shownVideoSha){
           $("idleText").textContent="Tanıtım videosu yükleniyor…";
@@ -540,7 +584,8 @@ async function refreshHome(force){
         if(shownVideoSha===v.sha)$("idle").hidden=true;
       }else{
         if(!$("hvid").hidden)stopHomeVideo();
-        $("idleText").textContent="Yayınlanacak içerik yok. Bir fotoğraf gönderin.";setLive("İçerik yok",false);
+        $("idleText").textContent=mode==="photo"?"Fotoğraf yok. Bir fotoğraf gönderin.":mode==="video"?"Video yok. Bir video yükleyin.":"Yayınlanacak içerik yok. Bir fotoğraf gönderin.";
+        setLive("İçerik yok",false);
       }
     }
     $("del").disabled=!photoExists;
@@ -556,6 +601,21 @@ window.addEventListener("pageshow",wake);
 window.addEventListener("online",wake);
 window.addEventListener("offline",()=>setLive("Çevrimdışı",false));
 
+// ---------- Yayın modunu değiştir ----------
+document.querySelectorAll(".mod").forEach(b=>{
+  b.onclick=async()=>{
+    const m=b.dataset.mod;if(m===mode)return;
+    busy(true);
+    try{
+      await upload(new Blob([m],{type:"text/plain"}),MODE_PATH,"Yayın modu");
+      applyMode(m);
+      toast("Mod: "+MODE_NAMES[m]+". Ekrana birkaç saniye içinde yansır.","ok");
+      busy(false);refreshHome(true);
+    }catch(e){toast("Mod gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.","err")}
+    finally{busy(false)}
+  };
+});
+
 // ---------- Fotoğraf gönder / kaldır ----------
 $("pick").onclick=()=>{$("photoFile").value="";$("photoFile").click()};
 $("photoFile").onchange=()=>handlePhoto($("photoFile").files[0]);
@@ -570,21 +630,22 @@ async function handlePhoto(f){
   try{img=await prepareImage(f)}catch(e){busy(false);toast("Fotoğraf açılamadı. Başka bir dosya deneyin.","err");return}
   busy(false);
   const url=URL.createObjectURL(img);
+  const note=mode==="video"?" Şu an Video modu açık, fotoğraf modu değiştirene kadar ekrana girmez.":(photoExists?" Yayındaki fotoğrafın yerine geçer.":" Hemen yayına girer.");
   const ok=await ask({title:"Ekrana gönderilsin mi?",img:url,ok:"Yayınla",
-    text:"Boyut "+fmt(img.size)+". "+(photoExists?"Yayındaki fotoğrafın yerine geçer.":"Hemen yayına girer.")});
+    text:"Boyut "+fmt(img.size)+"."+note});
   URL.revokeObjectURL(url);
   if(!ok)return;
   busy(true);const t0=Date.now();
   try{
     await upload(img,PHOTO_PATH,"Günlük resim",shownPhotoSha);
     busy(false);showTab("home");
-    toast("Yayınlandı ("+((Date.now()-t0)/1000).toFixed(1).replace(".",",")+" sn). Ekrana birkaç saniye içinde yansır.","ok");
+    toast(mode==="video"?"Fotoğraf yüklendi. Video modu açık olduğu için ekranda görünmez.":"Yayınlandı ("+((Date.now()-t0)/1000).toFixed(1).replace(".",",")+" sn). Ekrana birkaç saniye içinde yansır.","ok");
     refreshHome(true);
   }catch(e){toast("Fotoğraf gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.","err")}
   finally{busy(false)}
 }
 $("del").onclick=async()=>{
-  if(!await ask({title:"Fotoğraf kaldırılsın mı?",text:"Ekran tanıtım videosuna döner.",ok:"Kaldır",danger:true}))return;
+  if(!await ask({title:"Fotoğraf kaldırılsın mı?",text:mode==="photo"?"Fotoğraf modunda ekran boş kalır.":"Ekran tanıtım videosuna döner.",ok:"Kaldır",danger:true}))return;
   busy(true);
   try{
     const r=await remove(PHOTO_PATH,"Günlük resim silindi");
@@ -597,7 +658,7 @@ $("del").onclick=async()=>{
 async function refreshPhotoInfo(){
   try{
     const p=await info(PHOTO_PATH);photoExists=!!p;
-    $("pState").textContent=p?"Yayında, "+fmt(p.size):"Fotoğraf yok";
+    $("pState").textContent=p?"Yüklü, "+fmt(p.size):"Fotoğraf yok";
     $("del").disabled=!photoExists;
   }catch(e){$("pState").textContent="Durum alınamadı"}
 }
@@ -656,7 +717,7 @@ $("test").onclick=async()=>{
 
 // ---------- Sayfanın kendi kendini güncellemesi ----------
 // Sayfada değişiklik yapıldığında bu numara da değiştirilir
-const PAGE_VERSION="2026-11-22-19";
+const PAGE_VERSION="2026-11-23-1";
 async function checkForUpdate(){
   if(location.protocol==="file:")return;
   try{
